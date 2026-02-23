@@ -219,8 +219,8 @@ class LaCleoAPITester:
         return success, response
 
 def main():
-    print("🚀 Starting LaCleo.ai API Testing...")
-    print("=" * 50)
+    print("🚀 Starting LaCleo.ai API Testing (Origami.chat Style)...")
+    print("=" * 60)
     
     tester = LaCleoAPITester()
     
@@ -240,29 +240,52 @@ def main():
     # Test 3: Get Profile
     tester.test_get_profile()
     
-    # Test 4: Generate Leads (Core Feature)
-    print("\n⚡ Testing AI Lead Generation (This may take 10-20 seconds)...")
-    tester.test_generate_leads()
+    # Test 4: Template Categories (New Feature)
+    tester.test_template_categories()
     
-    # Test 5: Get Leads
+    # Test 5: Templates List
+    tester.test_templates()
+    
+    # Test 6: Template Details
+    tester.test_template_details()
+    
+    # Test 7: Run Template (Core Feature)
+    print("\n⚡ Testing Template Execution (YC Founders search)...")
+    tester.test_run_template()
+    
+    # Test 8: AI Search - Find People (Core Feature)
+    print("\n⚡ Testing AI Search - Find People (This may take 10-20 seconds)...")
+    tester.test_ai_search()
+    
+    # Test 9: AI Search - Find Companies
+    print("\n⚡ Testing AI Search - Find Companies...")
+    tester.test_ai_search_companies()
+    
+    # Test 10: Get Leads
     tester.test_get_leads()
     
-    # Test 6: Get Stats
+    # Test 11: Get Stats
     tester.test_get_stats()
     
-    # Test 7: Company Enrichment
+    # Test 12: Company Enrichment
     tester.test_enrich_company()
     
-    # Test 8: Search History
-    tester.test_get_search_history()
+    # Test 13: Get Conversations/Search History
+    tester.test_get_conversations()
     
-    # Test 9: Login with created user
+    # Test 14: Personalization (New Feature)
+    tester.test_personalize()
+    
+    # Test 15: Find Lookalikes (New Feature)
+    tester.test_lookalikes()
+    
+    # Test 16: Login with created user
     if test_email:
         tester.test_login(test_email)
     
     # Print Results
-    print("\n" + "=" * 50)
-    print(f"📊 API Testing Complete")
+    print("\n" + "=" * 60)
+    print(f"📊 LaCleo.ai API Testing Complete")
     print(f"✅ Tests Passed: {tester.tests_passed}/{tester.tests_run}")
     
     success_rate = (tester.tests_passed / tester.tests_run) * 100
