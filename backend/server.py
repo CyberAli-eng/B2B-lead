@@ -689,8 +689,8 @@ async def import_csv(file: UploadFile = File(...), current_user: dict = Depends(
         lead = {
             "id": str(uuid.uuid4()),
             "company_name": row.get("company", row.get("Company", row.get("company_name", "Unknown"))),
-            "contact_name": row.get("name", row.get("Name", row.get("contact_name", "")),
-            "contact_title": row.get("title", row.get("Title", row.get("contact_title", "")),
+            "contact_name": row.get("name", row.get("Name", row.get("contact_name", ""))),
+            "contact_title": row.get("title", row.get("Title", row.get("contact_title", ""))),
             "email": row.get("email", row.get("Email", "")),
             "industry": row.get("industry", row.get("Industry", "Unknown")),
             "location": row.get("location", row.get("Location", "")),
