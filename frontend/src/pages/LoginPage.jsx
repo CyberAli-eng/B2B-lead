@@ -42,29 +42,29 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 hero-pattern grid-bg">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8" data-testid="login-logo">
-          <div className="w-10 h-10 rounded-xl gradient-button flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
             <Zap className="w-6 h-6 text-white" />
           </div>
-          <span className="text-2xl font-bold text-white">LaCleo<span className="text-purple-400">.ai</span></span>
+          <span className="text-2xl font-bold text-gray-900">LaCleo</span>
         </Link>
 
-        <Card className="glass-card border-[#2a2a3a] bg-[#12121a]/90 purple-glow-sm">
+        <Card className="border border-gray-200 shadow-lg">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-bold text-white">Welcome back</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-2xl font-bold text-gray-900">Welcome back</CardTitle>
+            <CardDescription className="text-gray-500">
               Sign in to continue to your dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <Label htmlFor="email" className="text-gray-700">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     id="email"
                     name="email"
@@ -73,16 +73,16 @@ const LoginPage = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="pl-10 bg-[#1a1a24] border-[#2a2a3a] text-white placeholder-gray-500 focus:border-purple-500 input-glow"
+                    className="pl-10 border-gray-300 focus:border-violet-500 focus:ring-violet-500"
                     data-testid="login-email-input"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-300">Password</Label>
+                <Label htmlFor="password" className="text-gray-700">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     id="password"
                     name="password"
@@ -91,13 +91,13 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="pl-10 pr-10 bg-[#1a1a24] border-[#2a2a3a] text-white placeholder-gray-500 focus:border-purple-500 input-glow"
+                    className="pl-10 pr-10 border-gray-300 focus:border-violet-500 focus:ring-violet-500"
                     data-testid="login-password-input"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -107,11 +107,11 @@ const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full gradient-button text-white py-3 border-0"
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white py-3"
                 data-testid="login-submit-btn"
               >
                 {loading ? (
-                  <div className="spinner w-5 h-5 mx-auto"></div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
                 ) : (
                   <>
                     Sign in
@@ -122,19 +122,15 @@ const LoginPage = () => {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-500 text-sm">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-purple-400 hover:text-purple-300 font-medium" data-testid="login-register-link">
-                  Sign up
+                <Link to="/register" className="text-violet-600 hover:text-violet-700 font-medium" data-testid="login-register-link">
+                  Sign up free
                 </Link>
               </p>
             </div>
           </CardContent>
         </Card>
-
-        <p className="text-center text-gray-500 text-sm mt-6">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
-        </p>
       </div>
     </div>
   );
