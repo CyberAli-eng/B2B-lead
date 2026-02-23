@@ -403,13 +403,13 @@ const Dashboard = () => {
               Discovered Leads ({leads.length})
             </CardTitle>
             <div className="flex items-center gap-3">
-              <Select value={industryFilter} onValueChange={(val) => { setIndustryFilter(val); fetchLeads(); }}>
+              <Select value={industryFilter || "all"} onValueChange={(val) => { setIndustryFilter(val === "all" ? "" : val); fetchLeads(); }}>
                 <SelectTrigger className="w-40 bg-[#1a1a24] border-[#2a2a3a] text-gray-300" data-testid="industry-filter">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue placeholder="Industry" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#12121a] border-[#2a2a3a] text-white">
-                  <SelectItem value="">All Industries</SelectItem>
+                  <SelectItem value="all">All Industries</SelectItem>
                   <SelectItem value="SaaS">SaaS</SelectItem>
                   <SelectItem value="FinTech">FinTech</SelectItem>
                   <SelectItem value="HealthTech">HealthTech</SelectItem>
