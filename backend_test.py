@@ -109,17 +109,56 @@ class LaCleoAPITester:
         success, response = self.run_test("Get User Profile", "GET", "auth/me", 200)
         return success, response
 
-    def test_generate_leads(self):
-        """Test lead generation"""
+    def test_ai_search(self):
+        """Test AI search (main feature)"""
         success, response = self.run_test(
-            "Generate Leads",
+            "AI Search - Find People",
             "POST",
-            "leads/generate",
+            "search",
             200,
             data={
-                "prompt": "Find SaaS companies in California with 50-200 employees",
-                "num_leads": 5
+                "prompt": "Find VPs of Sales at SaaS companies that just raised Series B",
+                "mode": "find_people"
             }
+        )
+        return success, response
+
+    def test_ai_search_companies(self):
+        """Test AI search for companies"""
+        success, response = self.run_test(
+            "AI Search - Find Companies", 
+            "POST",
+            "search",
+            200,
+            data={
+                "prompt": "Find recently funded fintech companies",
+                "mode": "find_companies"
+            }
+        )
+        return success, response
+
+    def test_template_categories(self):
+        """Test template categories endpoint"""
+        success, response = self.run_test("Template Categories", "GET", "templates/categories", 200)
+        return success, response
+
+    def test_templates(self):
+        """Test templates endpoint"""
+        success, response = self.run_test("Templates List", "GET", "templates", 200)
+        return success, response
+
+    def test_template_details(self):
+        """Test template details endpoint"""
+        success, response = self.run_test("Template Details", "GET", "templates/find-yc-founders", 200)
+        return success, response
+
+    def test_run_template(self):
+        """Test running a template"""
+        success, response = self.run_test(
+            "Run Template",
+            "POST",
+            "templates/find-yc-founders/run",
+            200
         )
         return success, response
 
@@ -147,9 +186,36 @@ class LaCleoAPITester:
         )
         return success, response
 
-    def test_get_search_history(self):
-        """Test search history"""
-        success, response = self.run_test("Search History", "GET", "searches", 200)
+    def test_get_conversations(self):
+        """Test conversations/search history"""
+        success, response = self.run_test("Get Conversations", "GET", "conversations", 200)
+        return success, response
+
+    def test_personalize(self):
+        """Test personalization endpoint"""
+        success, response = self.run_test(
+            "Personalize for Website",
+            "POST",
+            "personalize",
+            200,
+            data={
+                "website_url": "https://techflow.io"
+            }
+        )
+        return success, response
+
+    def test_lookalikes(self):
+        """Test find lookalikes endpoint"""
+        success, response = self.run_test(
+            "Find Lookalikes",
+            "POST", 
+            "lookalikes",
+            200,
+            data={
+                "company_names": ["Stripe", "Notion", "Figma"],
+                "limit": 10
+            }
+        )
         return success, response
 
 def main():
