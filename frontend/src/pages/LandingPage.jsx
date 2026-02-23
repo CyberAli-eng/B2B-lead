@@ -2,115 +2,100 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Badge } from '../components/ui/badge';
 import { Card, CardContent } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
 import { 
   Search, 
   Users, 
-  Mail, 
-  Zap, 
-  BarChart3, 
-  Shield, 
+  Building2, 
   Globe, 
+  Database,
   ArrowRight,
-  CheckCircle,
   Star,
-  Play
+  Zap,
+  FileSpreadsheet,
+  UserSearch,
+  Sparkles,
+  ChevronRight,
+  ExternalLink
 } from 'lucide-react';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchPrompt, setSearchPrompt] = useState('');
+  const [activeMode, setActiveMode] = useState('find_people');
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (user) {
-      navigate('/dashboard', { state: { prompt: searchPrompt } });
+      navigate('/dashboard', { state: { prompt: searchPrompt, mode: activeMode } });
     } else {
-      navigate('/register', { state: { prompt: searchPrompt } });
+      navigate('/register', { state: { prompt: searchPrompt, mode: activeMode } });
     }
   };
 
-  const features = [
-    {
-      icon: <Search className="w-8 h-8" />,
-      title: "Leads Discovery Intelligence",
-      description: "Discover and segment high-quality leads, reveal verified contacts, and get smart recommendations with AI-powered insights"
-    },
-    {
-      icon: <Mail className="w-8 h-8" />,
-      title: "Outreach & Engagement",
-      description: "Streamline your outreach process and boost engagement with targeted communication tools"
-    },
-    {
-      icon: <BarChart3 className="w-8 h-8" />,
-      title: "Leads Data Enrichment",
-      description: "Enhance your lead data with additional insights and information for better decision making"
-    },
-    {
-      icon: <Zap className="w-8 h-8" />,
-      title: "LaCleo AI Force",
-      description: "Leverage advanced AI capabilities to automate workflows and uncover valuable insights"
-    }
+  const searchModes = [
+    { id: 'find_people', label: 'Find People', icon: <Users className="w-4 h-4" /> },
+    { id: 'find_companies', label: 'Find Companies', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'scrape_websites', label: 'Scrape Websites', icon: <Globe className="w-4 h-4" /> },
+    { id: 'enrich_data', label: 'Enrich Data', icon: <Database className="w-4 h-4" /> },
   ];
 
-  const stats = [
-    { value: "300M+", label: "Total Global Contacts" },
-    { value: "100M+", label: "Total Accounts" },
-    { value: "95.4%", label: "Email Accuracy" },
-    { value: "15M+", label: "Contacts Verified Monthly" }
+  const quickActions = [
+    { label: 'Personalize for You', icon: <Sparkles className="w-4 h-4" /> },
+    { label: 'Importing CSV', icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { label: 'Find Numbers and Emails', icon: <UserSearch className="w-4 h-4" /> },
+    { label: 'Find Lookalikes', icon: <Users className="w-4 h-4" /> },
   ];
 
-  const testimonials = [
-    {
-      quote: "Switching to LaCleo was a game-changer for our market launch. Our team saved countless hours, and we saw a 30% increase in sales in the first quarter alone.",
-      author: "Sarah Johnson",
-      role: "VP of Sales, TechFlow",
-      avatar: "SJ"
-    },
-    {
-      quote: "Launching in new markets used to be daunting, but LaCleo changed that. We've cut our time-to-market in half, and the process is efficient and repeatable.",
-      author: "Michael Chen",
-      role: "Head of Growth, DataScale",
-      avatar: "MC"
-    },
-    {
-      quote: "The support from LaCleo is fantastic. Our dedicated rep guided us every step of the way, and the platform scales with our needs.",
-      author: "Emily Rodriguez",
-      role: "Director of Sales, CloudFirst",
-      avatar: "ER"
-    }
+  const sampleResults = [
+    { fit_score: 97, company: "Burt", logo: "B", founder: "Kurt Sharma", batch: "W26", category: "AI/ML" },
+    { fit_score: 95, company: "21st", logo: "2", founder: "Serafim Korablev", batch: "W26", category: "Developer Tools" },
+    { fit_score: 93, company: "Sparkles", logo: "S", founder: "Daniil Bekirov", batch: "W26", category: "Developer Tools" },
+    { fit_score: 91, company: "Traverse", logo: "T", founder: "Lance Yan", batch: "W26", category: "AI/ML" },
+    { fit_score: 89, company: "Tensol", logo: "T", founder: "Oliviero Pinotti", batch: "W26", category: "AI Agents" },
+    { fit_score: 87, company: "Crow", logo: "C", founder: "Aryan Vij", batch: "W26", category: "AI Agents" },
+    { fit_score: 85, company: "Corelayer", logo: "C", founder: "Mitch Radhuber", batch: "W26", category: "AI Agents" },
+    { fit_score: 83, company: "Perfectly", logo: "P", founder: "Victor Luo", batch: "W26", category: "AI/ML" },
   ];
 
-  const trustedCompanies = [
-    "TechCorp", "DataFlow", "CloudScale", "InnovateLabs", "GrowthHub", "ScaleUp"
+  const templateCategories = [
+    { name: "Popular", count: 13 },
+    { name: "Healthcare", count: 41 },
+    { name: "Fintech", count: 25 },
+    { name: "E-commerce", count: 20 },
+    { name: "Biotech", count: 17 },
+    { name: "Proptech", count: 14 },
   ];
+
+  const trustedCompanies = ["Route", "Rho", "CBRE", "Redesign Health", "MightyCause", "TouchSuite"];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-white text-gray-900">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 glass-card">
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2" data-testid="nav-logo">
-              <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold">LaCleo<span className="text-purple-400">.ai</span></span>
+              <span className="text-xl font-bold text-gray-900">LaCleo</span>
             </Link>
             
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="nav-link text-gray-300 hover:text-white">Features</a>
-              <a href="#stats" className="nav-link text-gray-300 hover:text-white">Stats</a>
-              <a href="#testimonials" className="nav-link text-gray-300 hover:text-white">Testimonials</a>
+            <div className="hidden md:flex items-center gap-6">
+              <a href="#use-cases" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Use Cases</a>
+              <a href="#templates" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Templates</a>
+              <a href="#faq" className="text-gray-600 hover:text-gray-900 text-sm font-medium">FAQ</a>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {user ? (
                 <Button 
                   onClick={() => navigate('/dashboard')}
-                  className="gradient-button text-white border-0"
+                  className="bg-violet-600 hover:bg-violet-700 text-white"
                   data-testid="nav-dashboard-btn"
                 >
                   Dashboard
@@ -118,13 +103,13 @@ const LandingPage = () => {
               ) : (
                 <>
                   <Link to="/login">
-                    <Button variant="ghost" className="text-gray-300 hover:text-white" data-testid="nav-login-btn">
+                    <Button variant="ghost" className="text-gray-600 hover:text-gray-900" data-testid="nav-login-btn">
                       Log in
                     </Button>
                   </Link>
                   <Link to="/register">
-                    <Button className="gradient-button text-white border-0" data-testid="nav-signup-btn">
-                      Sign up
+                    <Button className="bg-violet-600 hover:bg-violet-700 text-white" data-testid="nav-signup-btn">
+                      Start Free
                     </Button>
                   </Link>
                 </>
@@ -134,280 +119,322 @@ const LandingPage = () => {
         </div>
       </nav>
 
+      {/* Product Hunt Badge */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-b border-orange-100">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-center gap-2 text-sm">
+          <Star className="w-4 h-4 text-orange-500 fill-orange-500" />
+          <span className="font-medium text-orange-800">We just hit #1 Product of the Day on Product Hunt</span>
+          <a href="#" className="text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
+            Read more <ArrowRight className="w-3 h-3" />
+          </a>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 hero-pattern grid-bg">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 mb-8 animate-fade-in">
-            <span className="text-purple-400 text-sm">No credit card required</span>
-            <span className="text-gray-500">•</span>
-            <span className="text-gray-400 text-sm">Monthly Free Credits</span>
-          </div>
+      <section className="pt-16 pb-8 px-4">
+        <div className="max-w-5xl mx-auto text-center">
+          <p className="text-gray-500 text-sm mb-4">How can I find your perfect customers?</p>
           
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 animate-fade-in stagger-1">
-            AI Powered Lead Generation with
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            Stop building lead lists manually.
             <br />
-            <span className="gradient-text">Unmatched Accuracy</span>
+            <span className="text-gray-400">Find your perfect customers with one prompt.</span>
           </h1>
           
-          <div className="flex items-center justify-center gap-4 mb-6 animate-fade-in stagger-2">
-            <div className="text-6xl font-bold gradient-text">95%</div>
-            <p className="text-left text-gray-400 text-sm max-w-xs">
-              AI-driven lead-generation platform, delivering up to unprecedented accuracy.
-            </p>
-          </div>
-          
-          <p className="text-gray-400 text-lg mb-10 max-w-2xl mx-auto animate-fade-in stagger-3">
-            Discover, enrich, and engage high-value B2B leads with our intelligent platform that works 24/7 for you.
-          </p>
-          
           {/* Search Box */}
-          <div className="max-w-2xl mx-auto mb-12 animate-fade-in stagger-4">
-            <form onSubmit={handleSearch} className="relative">
-              <div className="glass-card rounded-2xl p-2 purple-glow-sm">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <Input
-                      type="text"
-                      placeholder="Find SaaS companies in California with 50-200 employees..."
-                      value={searchPrompt}
-                      onChange={(e) => setSearchPrompt(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 bg-transparent border-0 text-white placeholder-gray-500 focus:ring-0 text-lg"
-                      data-testid="hero-search-input"
-                    />
+          <div className="max-w-3xl mx-auto mb-6">
+            <form onSubmit={handleSearch}>
+              <div className="relative bg-white rounded-2xl border-2 border-gray-200 shadow-lg hover:border-violet-300 transition-colors">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Find VPs of Sales at SaaS companies that just raised Series B..."
+                    value={searchPrompt}
+                    onChange={(e) => setSearchPrompt(e.target.value)}
+                    className="flex-1 border-0 bg-transparent text-lg placeholder-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    data-testid="hero-search-input"
+                  />
+                </div>
+                
+                {/* Search Mode Tabs */}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    {searchModes.map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setActiveMode(mode.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          activeMode === mode.id 
+                            ? 'bg-violet-100 text-violet-700' 
+                            : 'text-gray-500 hover:bg-gray-100'
+                        }`}
+                        data-testid={`mode-${mode.id}`}
+                      >
+                        {mode.icon}
+                        {mode.label}
+                      </button>
+                    ))}
                   </div>
                   <Button 
-                    type="submit" 
-                    className="gradient-button text-white px-8 py-4 text-lg border-0"
+                    type="submit"
+                    className="bg-violet-600 hover:bg-violet-700 text-white px-6"
                     data-testid="hero-search-btn"
                   >
-                    Find Leads
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    <ArrowRight className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
             </form>
-            <p className="text-gray-500 text-sm mt-4 flex items-center justify-center gap-2">
-              <Play className="w-4 h-4" />
-              Try voice search for faster lead discovery
-            </p>
-          </div>
-          
-          {/* Trusted By */}
-          <div className="animate-fade-in stagger-5">
-            <p className="text-gray-500 text-sm mb-6">Trusted by leading companies</p>
-            <div className="flex items-center justify-center gap-8 flex-wrap opacity-50">
-              {trustedCompanies.map((company, i) => (
-                <span key={i} className="text-gray-400 font-medium">{company}</span>
+            
+            {/* Quick Actions */}
+            <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+              <span className="text-gray-400 text-sm">or start by</span>
+              {quickActions.map((action, i) => (
+                <button
+                  key={i}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+                >
+                  {action.icon}
+                  {action.label}
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
-            Core capabilities
-          </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
-            Everything you need to discover, enrich, and engage with high-quality leads
+          
+          <p className="text-gray-400 text-sm mb-8">
+            Try it free — no credit card required
           </p>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, i) => (
-              <Card 
-                key={i} 
-                className="glass-card feature-card border-[#2a2a3a] bg-[#12121a]"
-                data-testid={`feature-card-${i}`}
-              >
-                <CardContent className="p-6">
-                  <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-4">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2 text-white">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          
-          <div className="text-center mt-10">
-            <Link to="/register">
-              <Button className="gradient-button text-white px-8 py-3 border-0" data-testid="features-cta-btn">
-                Get Started for Free
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section id="stats" className="py-20 px-4 bg-[#0d0d14]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, i) => (
-              <Card 
-                key={i} 
-                className="stat-card glass-card border-[#2a2a3a] bg-[#12121a] text-center"
-                data-testid={`stat-card-${i}`}
-              >
-                <CardContent className="p-8">
-                  <div className="text-4xl font-bold gradient-text mb-2">{stat.value}</div>
-                  <p className="text-gray-400">{stat.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI Power Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="text-purple-400 text-sm font-medium">From Discovery to Deal — Fully Automated</span>
-              <h2 className="text-3xl sm:text-4xl font-bold mt-2 mb-6">
-                The Power of AI Beyond Leads Discovery
-              </h2>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                Use the power of AI to automate your sales funnel. Use LaCleo's intelligent AI force to identify high-quality leads in real-time, craft personalized outreach, and track engagement — all the way to conversion.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {['Real-time lead identification', 'Personalized outreach automation', 'Engagement tracking', 'Full-stack revenue machine'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-gray-300">
-                    <CheckCircle className="w-5 h-5 text-purple-400" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register">
-                <Button className="gradient-button text-white px-8 py-3 border-0" data-testid="ai-section-cta-btn">
-                  Get Started for Free
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-            <div className="relative">
-              <div className="glass-card rounded-2xl p-8 purple-glow">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a24]">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Leads Discovered</p>
-                      <p className="text-xl font-bold">2,847</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a24]">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Emails Sent</p>
-                      <p className="text-xl font-bold">1,234</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a24]">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <BarChart3 className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-400">Conversion Rate</p>
-                      <p className="text-xl font-bold">24.8%</p>
-                    </div>
-                  </div>
+      {/* Live Demo Section */}
+      <section className="pb-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <Card className="bg-gray-900 text-white border-0 rounded-2xl overflow-hidden shadow-2xl">
+            <CardContent className="p-0">
+              {/* Chat Header */}
+              <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-800">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
                 </div>
+                <span className="text-sm text-gray-400">YC W26 Founders — AI/ML</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ICP Signals Section */}
-      <section className="py-20 px-4 bg-[#0d0d14]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <div className="glass-card rounded-2xl p-8">
-                <div className="space-y-4">
-                  {[
-                    { icon: <Globe className="w-5 h-5 text-blue-400" />, title: "Job Changes", desc: "Key decision maker moved to target company" },
-                    { icon: <Zap className="w-5 h-5 text-yellow-400" />, title: "Funding News", desc: "Series B funding announced - $25M" },
-                    { icon: <Shield className="w-5 h-5 text-green-400" />, title: "Tech Adoption", desc: "Started using competitor's solution" },
-                  ].map((signal, i) => (
-                    <div key={i} className="flex items-start gap-4 p-4 rounded-xl bg-[#1a1a24]">
-                      <div className="w-10 h-10 rounded-full bg-[#0a0a0f] flex items-center justify-center">
-                        {signal.icon}
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">{signal.title}</p>
-                        <p className="text-sm text-gray-400">{signal.desc}</p>
-                      </div>
+              
+              {/* AI Response */}
+              <div className="px-6 py-4">
+                <p className="text-gray-300 text-sm mb-4">
+                  Find YC W26 founders building in AI and developer tools
+                </p>
+                <p className="text-gray-500 text-sm mb-6">
+                  Found 20 YC W26 founders in AI/ML and developer tools. Results are sorted by relevance — I've included founder details, batch, and category information.
+                </p>
+                
+                {/* Results Table */}
+                <div className="bg-gray-800/50 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-violet-400" />
+                      <span className="text-sm font-medium">People</span>
+                      <Badge variant="secondary" className="bg-violet-600/20 text-violet-300 text-xs">
+                        20 leads
+                      </Badge>
+                      <Badge variant="outline" className="border-gray-600 text-gray-400 text-xs">
+                        5 columns
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <span className="text-purple-400 text-sm font-medium">ICP Signals — Smart Alerts for Smarter Outreach</span>
-              <h2 className="text-3xl sm:text-4xl font-bold mt-2 mb-6">
-                Powerful ICP Signals
-              </h2>
-              <p className="text-gray-400 mb-6 leading-relaxed">
-                Don't just chase leads. Engage when it matters. LaCleo's AI tracks real-time intent and behavioral signals — like job changes, tech adoption, funding news, or decision-makers exploring new tools.
-              </p>
-              <p className="text-gray-300 font-medium mb-8">
-                Right person. Right time. Right signal.
-              </p>
-              <Link to="/register">
-                <Button className="gradient-button text-white px-8 py-3 border-0" data-testid="icp-section-cta-btn">
-                  Get Started for Free
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
-            What everyone is saying
-          </h2>
-          <p className="text-gray-400 text-center mb-12">
-            Trusted by professionals worldwide
-          </p>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <Card 
-                key={i} 
-                className="glass-card border-[#2a2a3a] bg-[#12121a]"
-                data-testid={`testimonial-card-${i}`}
-              >
-                <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <Button variant="ghost" size="sm" className="text-violet-400 hover:text-violet-300 text-xs">
+                      Get more leads (~327)
+                    </Button>
+                  </div>
+                  
+                  {/* Table Header */}
+                  <div className="grid grid-cols-6 gap-4 px-4 py-2 text-xs text-gray-500 border-b border-gray-700/50">
+                    <div className="col-span-1"></div>
+                    <div>Fit Score</div>
+                    <div>Company</div>
+                    <div>Founder</div>
+                    <div>Batch</div>
+                    <div>Category</div>
+                  </div>
+                  
+                  {/* Table Rows */}
+                  <div className="max-h-80 overflow-y-auto">
+                    {sampleResults.map((result, i) => (
+                      <div 
+                        key={i}
+                        className="grid grid-cols-6 gap-4 px-4 py-3 text-sm border-b border-gray-700/30 hover:bg-gray-700/30 transition-colors items-center"
+                      >
+                        <div className="text-gray-500">{i + 1}</div>
+                        <div>
+                          <span className={`inline-flex items-center justify-center w-10 h-6 rounded text-xs font-bold ${
+                            result.fit_score >= 90 ? 'bg-emerald-500/20 text-emerald-400' :
+                            result.fit_score >= 80 ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {result.fit_score}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-300">
+                            {result.logo}
+                          </div>
+                          <span className="text-white">{result.company}</span>
+                        </div>
+                        <div className="text-gray-300">{result.founder}</div>
+                        <div className="text-gray-400">{result.batch}</div>
+                        <div>
+                          <Badge variant="outline" className="border-gray-600 text-gray-300 text-xs">
+                            {result.category}
+                          </Badge>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                  <p className="text-gray-300 mb-6 leading-relaxed">"{testimonial.quote}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-medium">
-                      {testimonial.avatar}
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">{testimonial.author}</p>
-                      <p className="text-sm text-gray-400">{testimonial.role}</p>
-                    </div>
+                </div>
+                
+                {/* Follow-up Input */}
+                <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-gray-800 rounded-xl">
+                  <Input
+                    placeholder="Ask a follow-up..."
+                    className="flex-1 bg-transparent border-0 text-white placeholder-gray-500 focus-visible:ring-0"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Trusted By */}
+      <section className="py-12 px-4 border-y border-gray-100 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center text-gray-500 text-sm mb-8">
+            Trusted by scale-ups and public companies to generate qualified pipeline
+          </p>
+          <div className="flex items-center justify-center gap-12 flex-wrap opacity-60">
+            {trustedCompanies.map((company, i) => (
+              <span key={i} className="text-gray-600 font-semibold text-lg">{company}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Personalize Section */}
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            Personalize LaCleo for <span className="text-violet-600">You</span>
+          </h2>
+          <p className="text-gray-500 mb-8">
+            Enter your website to get personalized prospect recommendations
+          </p>
+          <div className="flex items-center gap-2 max-w-xl mx-auto">
+            <div className="flex-1 relative">
+              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="yourcompany.com"
+                className="pl-12 py-6 text-lg border-2 border-gray-200 focus:border-violet-400"
+              />
+            </div>
+            <Button className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-6">
+              Analyze
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section id="use-cases" className="py-16 px-4 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold mb-2">Example Use Cases</h2>
+          <p className="text-gray-500 mb-8">Browse by industry or search for specific workflows</p>
+          
+          {/* Category Tabs */}
+          <div className="flex items-center gap-2 mb-8 flex-wrap">
+            {templateCategories.map((cat, i) => (
+              <Button
+                key={i}
+                variant={i === 0 ? "default" : "outline"}
+                className={i === 0 ? "bg-violet-600 text-white" : "border-gray-300 text-gray-600"}
+                size="sm"
+              >
+                {cat.name}
+                <Badge variant="secondary" className="ml-2 bg-white/20 text-inherit">
+                  {cat.count}
+                </Badge>
+              </Button>
+            ))}
+          </div>
+          
+          {/* Template Cards */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: "Find VPs of Sales at Series B Companies",
+                description: "Search for VP-level sales executives at companies that recently raised Series B funding.",
+                columns: ["Fit Score", "Company", "Contact", "Title", "Funding"],
+              },
+              {
+                title: "Find Recently Funded Fintechs",
+                description: "Search for fintech companies that have recently raised capital for vendor opportunities.",
+                columns: ["Fit Score", "Company", "Segment", "Funding", "Stage"],
+              },
+              {
+                title: "Find Healthcare Orgs with New Leadership",
+                description: "Search for healthcare organizations with recent executive changes.",
+                columns: ["Fit Score", "Organization", "Contact", "Title", "Start Date"],
+              },
+              {
+                title: "Find Stores Migrating Platforms",
+                description: "Search for e-commerce brands migrating between platforms.",
+                columns: ["Fit Score", "Brand", "From", "To", "Revenue"],
+              },
+            ].map((template, i) => (
+              <Card key={i} className="border border-gray-200 hover:border-violet-300 hover:shadow-lg transition-all cursor-pointer group">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-lg mb-2 group-hover:text-violet-600 transition-colors">
+                    {template.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm mb-4">{template.description}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {template.columns.map((col, j) => (
+                      <Badge key={j} variant="secondary" className="bg-gray-100 text-gray-600 text-xs">
+                        {col}
+                      </Badge>
+                    ))}
                   </div>
+                  <div className="flex items-center justify-end mt-4">
+                    <span className="text-violet-600 text-sm font-medium flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      View Details <ChevronRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-16 px-4">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold mb-8 text-center">Frequently asked questions</h2>
+          
+          <div className="space-y-4">
+            {[
+              { q: "What is LaCleo?", a: "LaCleo is an AI-powered GTM platform that helps sales teams find ideal customers, build prospect lists, and enrich data using natural language prompts." },
+              { q: "How is LaCleo different from Apollo or ZoomInfo?", a: "LaCleo uses AI to understand natural language queries and can search across multiple data sources to find prospects that traditional databases miss." },
+              { q: "What data sources does LaCleo use?", a: "We aggregate data from multiple sources including company databases, social networks, news, funding announcements, and job postings." },
+              { q: "How accurate is the contact data?", a: "Our email accuracy rate is 95.4% with real-time verification before delivery." },
+              { q: "How does the credit system work?", a: "Credits are used when you export leads or enrich data. Free tier includes 100 credits per month." },
+            ].map((faq, i) => (
+              <Card key={i} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <h3 className="font-medium mb-2">{faq.q}</h3>
+                  <p className="text-gray-500 text-sm">{faq.a}</p>
                 </CardContent>
               </Card>
             ))}
@@ -416,41 +443,41 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 bg-[#0d0d14]">
+      <section className="py-16 px-4 bg-gradient-to-br from-violet-600 to-purple-700 text-white">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Ready to supercharge your lead generation?
+          <h2 className="text-3xl font-bold mb-4">
+            Find your next perfect customers.
           </h2>
-          <p className="text-gray-400 mb-8">
-            Join thousands of sales professionals who are closing more deals with LaCleo AI.
+          <p className="text-violet-200 mb-8">
+            Join teams who are already using AI to build pipeline faster. Start your free trial today.
           </p>
-          <Link to="/register">
-            <Button className="gradient-button text-white px-10 py-4 text-lg border-0" data-testid="final-cta-btn">
-              Get Started for Free
-              <ArrowRight className="ml-2 w-5 h-5" />
+          <div className="flex items-center justify-center gap-4">
+            <Link to="/register">
+              <Button className="bg-white text-violet-700 hover:bg-gray-100 px-8 py-3" data-testid="final-cta-btn">
+                Start Free
+              </Button>
+            </Link>
+            <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8 py-3">
+              Book a Demo
             </Button>
-          </Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 border-t border-[#2a2a3a]">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">LaCleo<span className="text-purple-400">.ai</span></span>
+      <footer className="py-8 px-4 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
+              <Zap className="w-3 h-3 text-white" />
             </div>
-            <p className="text-gray-500 text-sm">
-              © 2024 LaCleo AI. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-gray-400 hover:text-white text-sm">Privacy</a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm">Terms</a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm">Contact</a>
-            </div>
+            <span className="font-bold text-gray-900">LaCleo</span>
+          </div>
+          <p className="text-gray-500 text-sm">© 2024 LaCleo. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="text-gray-500 hover:text-gray-900 text-sm">Privacy</a>
+            <a href="#" className="text-gray-500 hover:text-gray-900 text-sm">Terms</a>
+            <a href="#" className="text-gray-500 hover:text-gray-900 text-sm">Contact</a>
           </div>
         </div>
       </footer>
