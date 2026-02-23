@@ -1,19 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { ScrollArea } from '../components/ui/scroll-area';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/table';
 import {
   Select,
   SelectContent,
@@ -26,13 +18,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '../components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '../components/ui/dropdown-menu';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -40,25 +32,29 @@ import {
   Search,
   Zap,
   Users,
-  Mail,
-  Download,
-  RefreshCw,
-  LogOut,
   Building2,
-  MapPin,
-  Phone,
   Globe,
-  BarChart3,
-  History,
-  Trash2,
-  ExternalLink,
+  Database,
+  Download,
+  Send,
+  LogOut,
   ChevronDown,
-  Filter,
   Sparkles,
-  TrendingUp,
-  Target,
   MoreVertical,
-  Info
+  ExternalLink,
+  Mail,
+  Trash2,
+  Info,
+  FileSpreadsheet,
+  History,
+  Settings,
+  CreditCard,
+  HelpCircle,
+  ArrowRight,
+  Plus,
+  Loader2,
+  CheckCircle,
+  MessageSquare
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -67,30 +63,53 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, getAuthHeaders } = useAuth();
+  const messagesEndRef = useRef(null);
   
+  // State
   const [searchPrompt, setSearchPrompt] = useState('');
-  const [leads, setLeads] = useState([]);
+  const [activeMode, setActiveMode] = useState('find_people');
   const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversation, setCurrentConversation] = useState(null);
+  const [results, setResults] = useState([]);
+  const [columns, setColumns] = useState([]);
   const [stats, setStats] = useState(null);
-  const [searchHistory, setSearchHistory] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [templateCategories, setTemplateCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('popular');
+  const [showTemplates, setShowTemplates] = useState(true);
   const [selectedLead, setSelectedLead] = useState(null);
   const [enrichmentData, setEnrichmentData] = useState(null);
   const [enrichmentLoading, setEnrichmentLoading] = useState(false);
-  
-  // Filters
-  const [industryFilter, setIndustryFilter] = useState('');
-  const [minScoreFilter, setMinScoreFilter] = useState('');
+
+  const searchModes = [
+    { id: 'find_people', label: 'Find People', icon: <Users className="w-4 h-4" /> },
+    { id: 'find_companies', label: 'Find Companies', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'scrape_websites', label: 'Scrape Websites', icon: <Globe className="w-4 h-4" /> },
+    { id: 'enrich_data', label: 'Enrich Data', icon: <Database className="w-4 h-4" /> },
+  ];
 
   useEffect(() => {
     fetchStats();
-    fetchLeads();
-    fetchSearchHistory();
+    fetchTemplateCategories();
+    fetchTemplates();
+    fetchConversations();
     
-    // Check if there's a prompt from landing page
     if (location.state?.prompt) {
       setSearchPrompt(location.state.prompt);
+      if (location.state?.mode) {
+        setActiveMode(location.state.mode);
+      }
+      // Auto-search if prompt provided
+      setTimeout(() => {
+        handleSearch(null, location.state.prompt, location.state.mode);
+      }, 500);
     }
   }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentConversation]);
 
   const fetchStats = async () => {
     try {
@@ -103,55 +122,99 @@ const Dashboard = () => {
     }
   };
 
-  const fetchLeads = async () => {
+  const fetchTemplateCategories = async () => {
     try {
-      let url = `${API_URL}/api/leads?limit=100`;
-      if (industryFilter) url += `&industry=${industryFilter}`;
-      if (minScoreFilter) url += `&min_score=${minScoreFilter}`;
+      const response = await axios.get(`${API_URL}/api/templates/categories`, {
+        headers: getAuthHeaders()
+      });
+      setTemplateCategories(response.data);
+    } catch (error) {
+      console.error('Failed to fetch template categories:', error);
+    }
+  };
+
+  const fetchTemplates = async (category = null) => {
+    try {
+      let url = `${API_URL}/api/templates`;
+      if (category) url += `?category=${category}`;
       
       const response = await axios.get(url, {
         headers: getAuthHeaders()
       });
-      setLeads(response.data);
+      setTemplates(response.data);
     } catch (error) {
-      console.error('Failed to fetch leads:', error);
+      console.error('Failed to fetch templates:', error);
     }
   };
 
-  const fetchSearchHistory = async () => {
+  const fetchConversations = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/searches?limit=10`, {
+      const response = await axios.get(`${API_URL}/api/conversations?limit=10`, {
         headers: getAuthHeaders()
       });
-      setSearchHistory(response.data);
+      setConversations(response.data);
     } catch (error) {
-      console.error('Failed to fetch search history:', error);
+      console.error('Failed to fetch conversations:', error);
     }
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchPrompt.trim()) {
+  const handleSearch = async (e, promptOverride = null, modeOverride = null) => {
+    if (e) e.preventDefault();
+    
+    const prompt = promptOverride || searchPrompt;
+    const mode = modeOverride || activeMode;
+    
+    if (!prompt.trim()) {
       toast.error('Please enter a search prompt');
       return;
     }
 
     setLoading(true);
+    setShowTemplates(false);
+
     try {
-      const response = await axios.post(`${API_URL}/api/leads/generate`, {
-        prompt: searchPrompt,
-        num_leads: 10
+      const response = await axios.post(`${API_URL}/api/search`, {
+        prompt: prompt,
+        mode: mode,
+        conversation_id: currentConversation?.conversation_id
       }, {
         headers: getAuthHeaders()
       });
       
-      setLeads(response.data.leads);
-      toast.success(`Found ${response.data.total} leads!`);
+      setCurrentConversation(response.data);
+      setResults(response.data.results);
+      setColumns(response.data.columns);
+      setSearchPrompt('');
+      
+      toast.success(`Found ${response.data.total_found} results!`);
       fetchStats();
-      fetchSearchHistory();
+      fetchConversations();
     } catch (error) {
-      const message = error.response?.data?.detail || 'Failed to generate leads';
+      const message = error.response?.data?.detail || 'Search failed';
       toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRunTemplate = async (template) => {
+    setSearchPrompt(template.prompt);
+    setShowTemplates(false);
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API_URL}/api/templates/${template.id}/run`, {}, {
+        headers: getAuthHeaders()
+      });
+      
+      setCurrentConversation(response.data);
+      setResults(response.data.results);
+      setColumns(response.data.columns);
+      
+      toast.success(`Found ${response.data.total_found} results!`);
+      fetchStats();
+    } catch (error) {
+      toast.error('Failed to run template');
     } finally {
       setLoading(false);
     }
@@ -163,10 +226,9 @@ const Dashboard = () => {
     setEnrichmentData(null);
 
     try {
-      const domain = lead.website?.replace(/https?:\/\//, '').replace(/\/$/, '');
       const response = await axios.post(`${API_URL}/api/enrich`, {
         company_name: lead.company_name,
-        domain: domain
+        domain: lead.company_domain
       }, {
         headers: getAuthHeaders()
       });
@@ -178,49 +240,27 @@ const Dashboard = () => {
     }
   };
 
-  const handleDeleteLead = async (leadId) => {
-    try {
-      await axios.delete(`${API_URL}/api/leads/${leadId}`, {
-        headers: getAuthHeaders()
-      });
-      setLeads(leads.filter(l => l.id !== leadId));
-      toast.success('Lead deleted');
-      fetchStats();
-    } catch (error) {
-      toast.error('Failed to delete lead');
-    }
-  };
-
   const handleExportCSV = () => {
-    if (leads.length === 0) {
-      toast.error('No leads to export');
+    if (results.length === 0) {
+      toast.error('No results to export');
       return;
     }
 
-    const headers = ['Company', 'Industry', 'Website', 'Email', 'Phone', 'Location', 'Employees', 'Revenue', 'Decision Maker', 'Title', 'Lead Score'];
-    const csvContent = [
-      headers.join(','),
-      ...leads.map(lead => [
-        `"${lead.company_name}"`,
-        `"${lead.industry}"`,
-        `"${lead.website || ''}"`,
-        `"${lead.email || ''}"`,
-        `"${lead.phone || ''}"`,
-        `"${lead.location || ''}"`,
-        `"${lead.employees || ''}"`,
-        `"${lead.revenue || ''}"`,
-        `"${lead.decision_maker || ''}"`,
-        `"${lead.decision_maker_title || ''}"`,
-        lead.lead_score
-      ].join(','))
-    ].join('\n');
+    const headers = columns.filter(c => c !== 'Fit Score').join(',');
+    const rows = results.map(r => {
+      return columns.filter(c => c !== 'Fit Score').map(col => {
+        const key = col.toLowerCase().replace(/ /g, '_');
+        return `"${r[key] || r[col] || ''}"`;
+      }).join(',');
+    });
 
+    const csvContent = [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `lacleo_leads_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `lacleo_export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    toast.success('Leads exported successfully!');
+    toast.success('Exported successfully!');
   };
 
   const handleLogout = () => {
@@ -229,381 +269,440 @@ const Dashboard = () => {
     toast.success('Logged out successfully');
   };
 
+  const handleNewChat = () => {
+    setCurrentConversation(null);
+    setResults([]);
+    setColumns([]);
+    setShowTemplates(true);
+    setSearchPrompt('');
+  };
+
   const getScoreColor = (score) => {
-    if (score >= 80) return 'score-high';
-    if (score >= 50) return 'score-medium';
-    return 'score-low';
+    if (score >= 90) return 'bg-emerald-500/20 text-emerald-600';
+    if (score >= 80) return 'bg-amber-500/20 text-amber-600';
+    if (score >= 70) return 'bg-blue-500/20 text-blue-600';
+    return 'bg-gray-500/20 text-gray-600';
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass-card border-b border-[#2a2a3a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2" data-testid="dashboard-logo">
-              <div className="w-8 h-8 rounded-lg gradient-button flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">LaCleo<span className="text-purple-400">.ai</span></span>
-            </Link>
-            
-            <div className="flex items-center gap-4">
-              <span className="text-gray-400 text-sm hidden sm:block">
-                Welcome, <span className="text-white font-medium">{user?.name}</span>
-              </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="text-gray-400 hover:text-white" data-testid="user-menu-btn">
-                    <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
-                    </div>
-                    <ChevronDown className="ml-2 w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-[#12121a] border-[#2a2a3a] text-white">
-                  <DropdownMenuItem onClick={handleLogout} className="text-gray-300 hover:text-white hover:bg-[#1a1a24] cursor-pointer" data-testid="logout-btn">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+    <div className="h-screen bg-white flex">
+      {/* Sidebar */}
+      <div className="w-64 border-r border-gray-200 flex flex-col bg-gray-50">
+        {/* Logo */}
+        <div className="p-4 border-b border-gray-200">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-white" />
             </div>
+            <span className="text-lg font-bold text-gray-900">LaCleo</span>
+          </Link>
+        </div>
+
+        {/* New Chat Button */}
+        <div className="p-3">
+          <Button 
+            onClick={handleNewChat}
+            className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+            data-testid="new-chat-btn"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Search
+          </Button>
+        </div>
+
+        {/* Recent Searches */}
+        <div className="flex-1 overflow-y-auto p-3">
+          <p className="text-xs font-medium text-gray-500 mb-2 px-2">Recent Searches</p>
+          <div className="space-y-1">
+            {conversations.slice(0, 8).map((conv, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setSearchPrompt(conv.prompt);
+                  handleSearch(null, conv.prompt, conv.mode);
+                }}
+                className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-200 truncate transition-colors"
+              >
+                <MessageSquare className="w-3 h-3 inline mr-2 text-gray-400" />
+                {conv.prompt}
+              </button>
+            ))}
           </div>
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="stat-card glass-card border-[#2a2a3a] bg-[#12121a]" data-testid="stat-total-leads">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-purple-400" />
+        {/* User Menu */}
+        <div className="p-3 border-t border-gray-200">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-medium text-sm">
+                  {user?.name?.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{stats?.total_leads || 0}</p>
-                  <p className="text-sm text-gray-400">Total Leads</p>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                  <p className="text-xs text-gray-500">{stats?.credits_remaining || 500} credits</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="stat-card glass-card border-[#2a2a3a] bg-[#12121a]" data-testid="stat-searches">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Search className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{stats?.total_searches || 0}</p>
-                  <p className="text-sm text-gray-400">Searches</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="stat-card glass-card border-[#2a2a3a] bg-[#12121a]" data-testid="stat-avg-score">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-green-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{stats?.average_lead_score || 0}</p>
-                  <p className="text-sm text-gray-400">Avg Score</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="stat-card glass-card border-[#2a2a3a] bg-[#12121a]" data-testid="stat-industries">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-orange-400" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">{stats?.top_industries?.length || 0}</p>
-                  <p className="text-sm text-gray-400">Industries</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Billing
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Help
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600" data-testid="logout-btn">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </div>
 
-        {/* Search Section */}
-        <Card className="glass-card border-[#2a2a3a] bg-[#12121a] mb-8 purple-glow-sm" data-testid="search-card">
-          <CardHeader>
-            <CardTitle className="text-xl text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
-              AI Lead Discovery
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSearch} className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <Input
-                    type="text"
-                    placeholder="Find SaaS companies in California with 50-200 employees interested in AI solutions..."
-                    value={searchPrompt}
-                    onChange={(e) => setSearchPrompt(e.target.value)}
-                    className="pl-12 py-6 bg-[#1a1a24] border-[#2a2a3a] text-white placeholder-gray-500 focus:border-purple-500 input-glow text-base"
-                    data-testid="search-input"
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="gradient-button text-white px-8 py-6 border-0"
-                  data-testid="search-btn"
-                >
-                  {loading ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5 mr-2" />
-                      Generate Leads
-                    </>
-                  )}
-                </Button>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col">
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto">
+          {showTemplates && !currentConversation ? (
+            /* Templates View */
+            <div className="max-w-4xl mx-auto p-8">
+              <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  How can I help you find customers?
+                </h1>
+                <p className="text-gray-500">
+                  Start with a prompt or choose a template below
+                </p>
               </div>
-              
-              {/* Recent Searches */}
-              {searchHistory.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <span className="text-sm text-gray-500 flex items-center gap-1">
-                    <History className="w-4 h-4" />
-                    Recent:
-                  </span>
-                  {searchHistory.slice(0, 3).map((search, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setSearchPrompt(search.prompt)}
-                      className="text-sm px-3 py-1 rounded-full bg-[#1a1a24] text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors truncate max-w-xs"
+
+              {/* Quick Templates */}
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
+                  {templateCategories.slice(0, 6).map((cat) => (
+                    <Button
+                      key={cat.id}
+                      variant={selectedCategory === cat.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        fetchTemplates(cat.id);
+                      }}
+                      className={selectedCategory === cat.id ? "bg-violet-600 text-white" : "border-gray-300 text-gray-600"}
                     >
-                      {search.prompt}
-                    </button>
+                      {cat.name}
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        {cat.count}
+                      </Badge>
+                    </Button>
                   ))}
                 </div>
-              )}
-            </form>
-          </CardContent>
-        </Card>
 
-        {/* Leads Table */}
-        <Card className="glass-card border-[#2a2a3a] bg-[#12121a]" data-testid="leads-table-card">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-xl text-white flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-purple-400" />
-              Discovered Leads ({leads.length})
-            </CardTitle>
-            <div className="flex items-center gap-3">
-              <Select value={industryFilter || "all"} onValueChange={(val) => { setIndustryFilter(val === "all" ? "" : val); fetchLeads(); }}>
-                <SelectTrigger className="w-40 bg-[#1a1a24] border-[#2a2a3a] text-gray-300" data-testid="industry-filter">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Industry" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#12121a] border-[#2a2a3a] text-white">
-                  <SelectItem value="all">All Industries</SelectItem>
-                  <SelectItem value="SaaS">SaaS</SelectItem>
-                  <SelectItem value="FinTech">FinTech</SelectItem>
-                  <SelectItem value="HealthTech">HealthTech</SelectItem>
-                  <SelectItem value="E-commerce">E-commerce</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button 
-                variant="outline" 
-                onClick={handleExportCSV}
-                className="border-[#2a2a3a] text-gray-300 hover:text-white hover:bg-[#1a1a24]"
-                data-testid="export-btn"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {leads.length === 0 ? (
-              <div className="text-center py-16">
-                <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-400 mb-2">No leads yet</h3>
-                <p className="text-gray-500">Use the search above to discover your ideal customers</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {templates.slice(0, 6).map((template) => (
+                    <Card 
+                      key={template.id}
+                      className="border border-gray-200 hover:border-violet-300 hover:shadow-md transition-all cursor-pointer group"
+                      onClick={() => handleRunTemplate(template)}
+                      data-testid={`template-${template.id}`}
+                    >
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-violet-600 transition-colors">
+                          {template.title}
+                        </h3>
+                        <p className="text-gray-500 text-sm mb-3 line-clamp-2">
+                          {template.description}
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {template.columns.slice(0, 4).map((col, j) => (
+                            <Badge key={j} variant="secondary" className="bg-gray-100 text-gray-600 text-xs">
+                              {col}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <ScrollArea className="h-[500px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-[#2a2a3a] hover:bg-transparent">
-                      <TableHead className="text-gray-400">Company</TableHead>
-                      <TableHead className="text-gray-400">Industry</TableHead>
-                      <TableHead className="text-gray-400">Decision Maker</TableHead>
-                      <TableHead className="text-gray-400">Location</TableHead>
-                      <TableHead className="text-gray-400">Size</TableHead>
-                      <TableHead className="text-gray-400 text-center">Score</TableHead>
-                      <TableHead className="text-gray-400 text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.map((lead) => (
-                      <TableRow 
-                        key={lead.id} 
-                        className="lead-table-row border-[#2a2a3a]"
-                        data-testid={`lead-row-${lead.id}`}
-                      >
-                        <TableCell>
+            </div>
+          ) : (
+            /* Results View */
+            <div className="max-w-5xl mx-auto p-6">
+              {currentConversation && (
+                <div className="space-y-6">
+                  {/* AI Message */}
+                  <div className="flex gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      <Zap className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-gray-600 text-sm mb-4">
+                        {currentConversation.ai_message}
+                      </p>
+
+                      {/* Results Card */}
+                      <Card className="border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-400 font-medium">
-                              {lead.company_name.charAt(0)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-white">{lead.company_name}</p>
-                              {lead.website && (
-                                <a 
-                                  href={lead.website} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-gray-500 hover:text-purple-400 flex items-center gap-1"
-                                >
-                                  <Globe className="w-3 h-3" />
-                                  {lead.website.replace(/https?:\/\//, '').replace(/\/$/, '')}
-                                </a>
-                              )}
-                            </div>
+                            <Users className="w-4 h-4 text-violet-600" />
+                            <span className="font-medium text-gray-900">Results</span>
+                            <Badge className="bg-violet-100 text-violet-700">
+                              {results.length} leads
+                            </Badge>
+                            <Badge variant="outline" className="text-gray-500">
+                              {columns.length} columns
+                            </Badge>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="border-purple-500/30 text-purple-400 bg-purple-500/10">
-                            {lead.industry}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-white">{lead.decision_maker || '-'}</p>
-                            <p className="text-sm text-gray-500">{lead.decision_maker_title}</p>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-violet-600 hover:text-violet-700"
+                            >
+                              Get more leads (~{currentConversation.available_count})
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={handleExportCSV}
+                              data-testid="export-btn"
+                            >
+                              <Download className="w-4 h-4 mr-1" />
+                              Export
+                            </Button>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-gray-400">
-                            <MapPin className="w-4 h-4" />
-                            {lead.location || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gray-400">{lead.employees || '-'}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-sm ${getScoreColor(lead.lead_score)}`}>
-                            {lead.lead_score}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-[#12121a] border-[#2a2a3a] text-white">
-                              <DropdownMenuItem 
-                                onClick={() => handleEnrichLead(lead)}
-                                className="text-gray-300 hover:text-white hover:bg-[#1a1a24] cursor-pointer"
-                                data-testid={`enrich-btn-${lead.id}`}
-                              >
-                                <Info className="w-4 h-4 mr-2" />
-                                Enrich Data
-                              </DropdownMenuItem>
-                              {lead.email && (
-                                <DropdownMenuItem 
-                                  onClick={() => window.location.href = `mailto:${lead.email}`}
-                                  className="text-gray-300 hover:text-white hover:bg-[#1a1a24] cursor-pointer"
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-gray-200 bg-gray-50">
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 w-10">#</th>
+                                {columns.map((col, i) => (
+                                  <th key={i} className="px-4 py-2 text-left text-xs font-medium text-gray-500">
+                                    {col}
+                                  </th>
+                                ))}
+                                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {results.map((result, i) => (
+                                <tr 
+                                  key={result.id || i}
+                                  className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                                  data-testid={`result-row-${i}`}
                                 >
-                                  <Mail className="w-4 h-4 mr-2" />
-                                  Send Email
-                                </DropdownMenuItem>
-                              )}
-                              {lead.website && (
-                                <DropdownMenuItem 
-                                  onClick={() => window.open(lead.website, '_blank')}
-                                  className="text-gray-300 hover:text-white hover:bg-[#1a1a24] cursor-pointer"
-                                >
-                                  <ExternalLink className="w-4 h-4 mr-2" />
-                                  Visit Website
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteLead(lead.id)}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
-                                data-testid={`delete-btn-${lead.id}`}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete Lead
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                                  <td className="px-4 py-3 text-sm text-gray-400">{i + 1}</td>
+                                  {columns.map((col, j) => {
+                                    const key = col.toLowerCase().replace(/ /g, '_');
+                                    const value = result[key] || result[col.toLowerCase()] || '';
+                                    
+                                    if (col === 'Fit Score') {
+                                      return (
+                                        <td key={j} className="px-4 py-3">
+                                          <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-xs font-bold ${getScoreColor(result.fit_score)}`}>
+                                            {result.fit_score}
+                                          </span>
+                                        </td>
+                                      );
+                                    }
+                                    
+                                    if (col === 'Company') {
+                                      return (
+                                        <td key={j} className="px-4 py-3">
+                                          <div className="flex items-center gap-2">
+                                            {result.company_logo ? (
+                                              <img src={result.company_logo} alt="" className="w-5 h-5 rounded" />
+                                            ) : (
+                                              <div className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-500">
+                                                {(result.company_name || '?').charAt(0)}
+                                              </div>
+                                            )}
+                                            <span className="font-medium text-gray-900">
+                                              {result.company_name}
+                                            </span>
+                                          </div>
+                                        </td>
+                                      );
+                                    }
+                                    
+                                    if (col === 'Contact') {
+                                      return (
+                                        <td key={j} className="px-4 py-3 text-sm text-gray-700">
+                                          {result.contact_name}
+                                        </td>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <td key={j} className="px-4 py-3 text-sm text-gray-600">
+                                        {typeof value === 'object' ? JSON.stringify(value) : value}
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="px-4 py-3 text-right">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleEnrichLead(result)} className="cursor-pointer">
+                                          <Info className="w-4 h-4 mr-2" />
+                                          Enrich Data
+                                        </DropdownMenuItem>
+                                        {result.email && (
+                                          <DropdownMenuItem onClick={() => window.location.href = `mailto:${result.email}`} className="cursor-pointer">
+                                            <Mail className="w-4 h-4 mr-2" />
+                                            Send Email
+                                          </DropdownMenuItem>
+                                        )}
+                                        {result.website && (
+                                          <DropdownMenuItem onClick={() => window.open(result.website, '_blank')} className="cursor-pointer">
+                                            <ExternalLink className="w-4 h-4 mr-2" />
+                                            Visit Website
+                                          </DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+
+                      {/* Suggested Follow-ups */}
+                      {currentConversation.suggested_follow_ups?.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {currentConversation.suggested_follow_ups.map((followUp, i) => (
+                            <button
+                              key={i}
+                              onClick={() => {
+                                setSearchPrompt(followUp);
+                                handleSearch(null, followUp);
+                              }}
+                              className="px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-sm hover:bg-violet-100 transition-colors"
+                            >
+                              {followUp}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Search Input */}
+        <div className="border-t border-gray-200 p-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <form onSubmit={handleSearch}>
+              <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-2 px-4 py-3">
+                  <Search className="w-5 h-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Find your perfect customers..."
+                    value={searchPrompt}
+                    onChange={(e) => setSearchPrompt(e.target.value)}
+                    className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                    data-testid="search-input"
+                  />
+                  <div className="flex items-center gap-1 border-l border-gray-200 pl-3">
+                    {searchModes.slice(0, 2).map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setActiveMode(mode.id)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          activeMode === mode.id 
+                            ? 'bg-violet-100 text-violet-700' 
+                            : 'text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {mode.icon}
+                        <span className="hidden sm:inline">{mode.label}</span>
+                      </button>
                     ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
-      </main>
+                  </div>
+                  <Button 
+                    type="submit"
+                    disabled={loading}
+                    className="bg-violet-600 hover:bg-violet-700 text-white"
+                    data-testid="search-btn"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       {/* Enrichment Dialog */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="bg-[#12121a] border-[#2a2a3a] text-white max-w-2xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-purple-400" />
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-violet-600" />
               {selectedLead?.company_name}
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Enriched company data
-            </DialogDescription>
           </DialogHeader>
           
           {enrichmentLoading ? (
             <div className="py-12 flex items-center justify-center">
-              <div className="spinner w-10 h-10"></div>
+              <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
             </div>
           ) : enrichmentData ? (
             <div className="space-y-6 py-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Description</h4>
-                <p className="text-gray-300">{enrichmentData.description}</p>
+                <h4 className="text-sm font-medium text-gray-500 mb-2">Description</h4>
+                <p className="text-gray-700">{enrichmentData.description}</p>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-[#1a1a24]">
-                  <p className="text-sm text-gray-400">Industry</p>
-                  <p className="text-white font-medium">{enrichmentData.industry}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#1a1a24]">
-                  <p className="text-sm text-gray-400">Employees</p>
-                  <p className="text-white font-medium">{enrichmentData.employees || 'N/A'}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#1a1a24]">
-                  <p className="text-sm text-gray-400">Revenue</p>
-                  <p className="text-white font-medium">{enrichmentData.revenue || 'N/A'}</p>
-                </div>
-                <div className="p-4 rounded-xl bg-[#1a1a24]">
-                  <p className="text-sm text-gray-400">Founded</p>
-                  <p className="text-white font-medium">{enrichmentData.founded || 'N/A'}</p>
-                </div>
+                {[
+                  { label: "Industry", value: enrichmentData.industry },
+                  { label: "Employees", value: enrichmentData.employees },
+                  { label: "Revenue", value: enrichmentData.revenue },
+                  { label: "Founded", value: enrichmentData.founded },
+                ].map((item, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-gray-50">
+                    <p className="text-xs text-gray-500">{item.label}</p>
+                    <p className="font-medium text-gray-900">{item.value || 'N/A'}</p>
+                  </div>
+                ))}
               </div>
               
               {enrichmentData.technologies?.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">Technologies</h4>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Technologies</h4>
                   <div className="flex flex-wrap gap-2">
                     {enrichmentData.technologies.map((tech, i) => (
-                      <Badge key={i} variant="outline" className="border-purple-500/30 text-purple-400 bg-purple-500/10">
+                      <Badge key={i} variant="secondary" className="bg-violet-50 text-violet-700">
                         {tech}
                       </Badge>
                     ))}
@@ -611,31 +710,17 @@ const Dashboard = () => {
                 </div>
               )}
               
-              {(enrichmentData.social_links?.linkedin || enrichmentData.social_links?.twitter) && (
+              {enrichmentData.recent_news?.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">Social Links</h4>
-                  <div className="flex gap-3">
-                    {enrichmentData.social_links.linkedin && (
-                      <a 
-                        href={`https://linkedin.com/company/${enrichmentData.social_links.linkedin}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300"
-                      >
-                        LinkedIn
-                      </a>
-                    )}
-                    {enrichmentData.social_links.twitter && (
-                      <a 
-                        href={`https://twitter.com/${enrichmentData.social_links.twitter}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:text-blue-300"
-                      >
-                        Twitter
-                      </a>
-                    )}
-                  </div>
+                  <h4 className="text-sm font-medium text-gray-500 mb-2">Recent News</h4>
+                  <ul className="space-y-2">
+                    {enrichmentData.recent_news.map((news, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        {news}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
